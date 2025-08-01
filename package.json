@@ -1,0 +1,21 @@
+{
+  "name": "coffee-sales-importer",
+  "version": "1.0.0",
+  "description": "Import coffee sales data from Excel to SQLite with proper ER schema",
+  "main": "import-sales.js",
+  "type": "module",
+  "scripts": {
+    "setup": "node setup.js",
+    "start": "node import-sales.js",
+    "analyze": "node analyze-excel.js",
+    "query": "node query-db.js",
+    "all": "npm run analyze && npm start && npm run query"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5",
+    "sqlite3": "^5.1.6",
+    "sqlite": "^5.1.1"
+  },
+  "author": "Senior Dev with Sarcastic Tendencies",
+  "license": "MIT"
+}

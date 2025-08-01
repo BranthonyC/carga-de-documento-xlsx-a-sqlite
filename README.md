@@ -63,6 +63,161 @@ Características del query tool:
 - `package.json` - Dependencias del proyecto
 - Logs de importación en la consola
 
+## 📊 Diagramas del Proceso
+
+### Flujo Principal de Importación
+
+```mermaid
+flowchart TD
+    A["📁 Archivo Excel<br/>(Coffe_sales.xlsx)"] --> B["🔍 Leer & Analizar<br/>Headers y Datos"]
+    
+    B --> C["🏗️ Crear Esquema ER<br/>5 Tablas Normalizadas"]
+    
+    C --> C1["📋 Crear tabla CLIENTES<br/>(id, codigo_anonimo, tipo_cliente...)"]
+    C --> C2["📦 Crear tabla PRODUCTOS<br/>(id, nombre_producto, categoria...)"]
+    C --> C3["💳 Crear tabla METODOS_PAGO<br/>(id, tipo_pago, descripcion...)"]
+    C --> C4["🏪 Crear tabla SUCURSALES<br/>(id, nombre_sucursal, ciudad...)"]
+    C --> C5["💰 Crear tabla VENTAS<br/>(id, fecha, FK_producto, FK_cliente...)"]
+    
+    C1 --> D["🔍 Crear Índices<br/>Para Performance"]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    C5 --> D
+    
+    D --> E["🗂️ Inicializar<br/>Caché de Lookups"]
+    
+    E --> F["📊 Procesar Filas<br/>del Excel"]
+    
+    F --> G["🎯 Mapeo Inteligente<br/>Columnas → Campos"]
+    
+    G --> G1["🔍 Extraer Producto<br/>+ Categoría"]
+    G --> G2["👤 Extraer Cliente<br/>+ Tipo"]
+    G --> G3["💳 Extraer Método Pago"]
+    G --> G4["🏪 Extraer Sucursal<br/>+ Ubicación"]
+    G --> G5["📅 Extraer & Calcular<br/>Fechas + Períodos"]
+    
+    G1 --> H1["🔄 Lookup/Insert<br/>PRODUCTOS"]
+    G2 --> H2["🔄 Lookup/Insert<br/>CLIENTES"]
+    G3 --> H3["🔄 Lookup/Insert<br/>METODOS_PAGO"]
+    G4 --> H4["🔄 Lookup/Insert<br/>SUCURSALES"]
+    
+    H1 --> I["💾 Insert VENTA<br/>con Foreign Keys"]
+    H2 --> I
+    H3 --> I
+    H4 --> I
+    G5 --> I
+    
+    I --> J{{"🔄 ¿Más filas<br/>en Excel?"}}
+    
+    J -->|Si| F
+    J -->|No| K["📈 Actualizar<br/>Estadísticas Clientes"]
+    
+    K --> L["📊 Generar Reporte<br/>Completo"]
+    
+    L --> M["✅ Base de Datos<br/>Lista para Consultas"]
+    
+    M --> N["🔥 Query Tool<br/>12 Consultas Avanzadas"]
+    
+    subgraph Cache ["🧠 Sistema de Caché"]
+        CA["Productos Cache"]
+        CB["Clientes Cache"] 
+        CC["Sucursales Cache"]
+        CD["Métodos Pago Cache"]
+    end
+    
+    H1 -.-> CA
+    H2 -.-> CB
+    H3 -.-> CD
+    H4 -.-> CC
+    
+    subgraph ER ["🏛️ Esquema ER Final"]
+        ERA["CLIENTES<br/>↓ 1:N"]
+        ERB["PRODUCTOS<br/>↓ 1:N"]
+        ERC["METODOS_PAGO<br/>↓ 1:N"]
+        ERD["SUCURSALES<br/>↓ 1:N"]
+        ERE["VENTAS<br/>(Tabla Central)"]
+        
+        ERA --> ERE
+        ERB --> ERE
+        ERC --> ERE
+        ERD --> ERE
+    end
+    
+    M -.-> ER
+    
+    style A fill:#e1f5fe
+    style M fill:#c8e6c9
+    style N fill:#fff3e0
+    style ER fill:#f3e5f5
+    style Cache fill:#fff8e1
+```
+
+### Transformación de Datos por Fila
+
+```mermaid
+graph LR
+    subgraph Excel ["📊 Fila Excel Original"]
+        E1["Fecha: 2024-01-15 09:30"]
+        E2["Producto: Cappuccino Grande"]
+        E3["Precio: $4.50"]
+        E4["Cliente: ANON_12345"]
+        E5["Sucursal: Centro Mall"]
+        E6["Pago: Tarjeta Credito"]
+    end
+    
+    subgraph Transform ["🔄 Transformación Inteligente"]
+        T1["📅 Calcular:<br/>• Día semana: Lunes<br/>• Período: Mañana<br/>• Mes: Enero"]
+        T2["🔍 Normalizar:<br/>• Categoría: Bebida Caliente<br/>• Precio base: $4.50"]
+        T3["👤 Identificar:<br/>• Tipo: Regular<br/>• Nuevo/Existente"]
+        T4["🏪 Geocodificar:<br/>• Ciudad: Centro<br/>• Activa: true"]
+        T5["💳 Categorizar:<br/>• Tipo: Tarjeta<br/>• Descripción: Crédito"]
+    end
+    
+    subgraph Lookup ["🗂️ Sistema Lookup/Cache"]
+        L1["🔍 Buscar Producto<br/>Cache: cappuccino grande<br/>→ id_producto: 15"]
+        L2["🔍 Buscar Cliente<br/>Cache: anon_12345<br/>→ id_cliente: 234"]
+        L3["🔍 Buscar Sucursal<br/>Cache: centro mall<br/>→ id_sucursal: 3"]
+        L4["🔍 Buscar Método<br/>Cache: tarjeta credito<br/>→ id_metodo: 2"]
+    end
+    
+    subgraph Tables ["🏛️ Inserción en Tablas ER"]
+        TB1["📦 PRODUCTOS<br/>(si no existe)<br/>INSERT: Cappuccino Grande"]
+        TB2["👤 CLIENTES<br/>(si no existe)<br/>INSERT: ANON_12345"]
+        TB3["🏪 SUCURSALES<br/>(si no existe)<br/>INSERT: Centro Mall"]
+        TB4["💳 METODOS_PAGO<br/>(si no existe)<br/>INSERT: Tarjeta Credito"]
+        TB5["💰 VENTAS<br/>INSERT con FKs:<br/>• id_producto: 15<br/>• id_cliente: 234<br/>• id_sucursal: 3<br/>• id_metodo: 2<br/>• fecha_venta: 2024-01-15<br/>• periodo_dia: Mañana<br/>• dia_semana: Lunes<br/>• monto_total: 4.50"]
+    end
+    
+    E1 --> T1
+    E2 --> T2
+    E3 --> T2
+    E4 --> T3
+    E5 --> T4
+    E6 --> T5
+    
+    T2 --> L1
+    T3 --> L2
+    T4 --> L3
+    T5 --> L4
+    
+    L1 --> TB1
+    L2 --> TB2
+    L3 --> TB3
+    L4 --> TB4
+    
+    TB1 --> TB5
+    TB2 --> TB5
+    TB3 --> TB5
+    TB4 --> TB5
+    T1 --> TB5
+    
+    style Excel fill:#e3f2fd
+    style Transform fill:#f3e5f5
+    style Lookup fill:#fff8e1
+    style Tables fill:#e8f5e8
+```
+
 ## 🔧 Características Técnicas
 
 ### Esquema ER Profesional
